@@ -1,0 +1,455 @@
+/* ============================================================
+   Maliyil Medical Centre - Professional Clean CSS
+   Developed by: Max Efex (Aneesh K Rajeev)
+   ============================================================ */
+
+/* 1. RESET & VARIABLES */
+:root {
+  --primary-blue: #0A3D62;
+  /* Deep Premium Navy */
+  --accent-blue: #1890FF;
+  /* Bright Medical Blue */
+  --bg-light: #F4F7FB;
+  --text-main: #2C3E50;
+  --text-muted: #576574;
+  --white: #FFFFFF;
+  --shadow-sm: 0 4px 12px rgba(10, 61, 98, 0.06);
+  --shadow-lg: 0 12px 30px rgba(10, 61, 98, 0.12);
+  --radius: 16px;
+  --transition: all 0.3s ease;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+body {
+  background: var(--bg-light);
+  color: var(--text-main);
+  font-size: 16px;
+  line-height: 1.8;
+  overflow-x: hidden;
+}
+
+.container {
+  width: 90%;
+  max-width: 1200px;
+  margin: auto;
+}
+
+/* 2. NEWS TICKER (For Weekly Updates) */
+.news-ticker {
+  background: #EBF8FF;
+  color: var(--primary-blue);
+  padding: 10px 0;
+  font-size: 14px;
+  border-bottom: 1px solid #BEE3F8;
+  overflow: hidden;
+  text-align: center;
+}
+
+.news-ticker p {
+  display: inline-block;
+  white-space: nowrap;
+  animation: ticker 25s linear infinite;
+}
+
+@keyframes ticker {
+  0% {
+    transform: translateX(100%);
+  }
+
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+/* 3. HEADER & NAVIGATION */
+.header {
+  height: 90px;
+  min-height: 90px;
+  /* CLS തടയാൻ */
+  display: flex;
+  align-items: center;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.logo img {
+  height: 60px;
+  width: 160px;
+  /* Speed സ്കോറിനായി ഫിക്സ്ഡ് ആക്കി */
+  object-fit: contain;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+}
+
+.nav a {
+  margin-left: 24px;
+  text-decoration: none;
+  color: var(--text-main);
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.nav a:hover {
+  color: var(--accent-blue);
+}
+
+.menu-toggle {
+  display: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: var(--primary-blue);
+  position: relative;
+  z-index: 1001;
+}
+
+/* 4. BUTTONS & HERO SECTION */
+.btn-main {
+  background: linear-gradient(135deg, var(--accent-blue), var(--primary-blue));
+  color: var(--white) !important;
+  padding: 10px 25px;
+  border-radius: 50px;
+  font-weight: 600;
+  text-decoration: none;
+  margin-left: 20px;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+
+.hero {
+  padding: 60px 0;
+  background: var(--white);
+  border-bottom-left-radius: 40px;
+  border-bottom-right-radius: 40px;
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 40px;
+}
+
+.hero-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 25px;
+}
+
+.call-btn {
+  padding: 10px 18px;
+  font-size: 14px;
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: auto;
+  transition: var(--transition);
+}
+
+.doctor {
+  background: #0b4da2;
+}
+
+.pharmacy {
+  background: #16a34a;
+}
+
+.lab {
+  background: #0891b2;
+}
+
+.appointment {
+  background: #e11d48;
+}
+
+.hero img {
+  width: 100%;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+}
+
+/* 5. CARDS & GRIDS (Services, Lab, Packages) */
+.section-title {
+  text-align: center;
+  font-size: 30px;
+  color: var(--primary-blue);
+  margin: 50px 0 30px;
+}
+
+.services-grid,
+.packages-grid,
+.contact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
+  padding-bottom: 50px;
+}
+
+.service-card,
+.package-card,
+.contact-card {
+  background: var(--white);
+  padding: 30px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+  transition: var(--transition);
+  border: 1px solid rgba(0, 0, 0, 0.02);
+}
+
+.service-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+}
+
+.price {
+  display: block;
+  font-size: 20px;
+  font-weight: 700;
+  color: #2ecc71;
+  margin: 15px 0;
+}
+
+/* 6. GALLERY (CLS FIX) */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.gallery-grid img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  /* ലേഔട്ട് ജമ്പിംഗ് ഒഴിവാക്കാൻ */
+  object-fit: cover;
+  border-radius: var(--radius);
+  background: #e2e8f0;
+  transition: var(--transition);
+}
+
+/* 7. BOOKING FORM & WIDGET (Contact Page Fix) */
+.booking-widget {
+  max-width: 800px;
+  margin: 40px auto;
+  background: var(--white);
+  padding: 35px;
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.contact-form input,
+.contact-form select,
+.contact-form textarea {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  font-size: 15px;
+  outline: none;
+  background: #F8FAFC;
+}
+
+.contact-form textarea {
+  grid-column: span 2;
+  height: 120px;
+}
+
+.btn-submit {
+  width: 100%;
+  background: var(--primary-blue);
+  color: #fff;
+  padding: 16px;
+  border: none;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 12px;
+  margin: 30px auto 0;
+  max-width: 1000px;
+}
+
+.slot-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(11, 77, 162, 0.18);
+  background: #fff;
+  color: var(--primary-blue);
+  font-weight: 700;
+  text-decoration: none;
+  transition: var(--transition);
+  box-shadow: 0 8px 20px rgba(11, 77, 162, 0.05);
+}
+
+.slot-btn:hover {
+  transform: translateY(-2px);
+  background: rgba(24, 144, 255, 0.1);
+  border-color: var(--accent-blue);
+}
+
+.slot-btn:active {
+  background: var(--accent-blue);
+  color: #fff;
+  border-color: transparent;
+}
+
+.footer-social {
+  display: inline-flex;
+  gap: 14px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.footer-social a {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--white);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: var(--transition);
+}
+
+.footer-social a:hover {
+  background: var(--accent-blue);
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+/* 8. FOOTER & FLOAT */
+.footer {
+  background: var(--primary-blue);
+  color: var(--white);
+  text-align: center;
+  padding: 50px 0 30px;
+  border-top-left-radius: 40px;
+  border-top-right-radius: 40px;
+}
+
+.whatsapp-float {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  background: #25D366;
+  color: white;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  z-index: 2000;
+  box-shadow: var(--shadow-lg);
+}
+
+/* 9. MOBILE RESPONSIVE MEDIA QUERIES */
+@media (max-width: 768px) {
+  .header {
+    height: 80px;
+    min-height: 80px;
+  }
+
+  .logo img {
+    height: 50px;
+    width: 130px;
+  }
+
+  .menu-toggle {
+    display: block;
+  }
+
+  .nav {
+    display: none;
+    /* ഡിഫോൾട്ട് ആയി ഹൈഡ് ചെയ്യുന്നു */
+    position: absolute;
+    top: 80px;
+    left: 0;
+    width: 100%;
+    background: #fff;
+    flex-direction: column;
+    padding: 20px;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+  }
+
+  .nav.active {
+    display: flex !important;
+  }
+
+  .nav a {
+    margin: 10px 0;
+    width: 100%;
+    text-align: center;
+  }
+
+  .btn-main {
+    margin-left: 0;
+    width: 100%;
+    text-align: center;
+  }
+
+  .hero-grid {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .hero-buttons {
+    justify-content: center;
+  }
+
+  .call-btn {
+    flex: 1 1 100%;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-form textarea {
+    grid-column: span 1;
+  }
+}
