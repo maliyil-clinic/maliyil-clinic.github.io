@@ -4,7 +4,7 @@ import subprocess
 import time
 import urllib.request
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 REPO = "maliyil-clinic/maliyil-clinic.github.io"
 HEADERS = {"User-Agent": "Python-Deploy-Monitor"}
@@ -86,6 +86,9 @@ def monitor_pages_deployment(since_time):
     print("\n🔍 Waiting for GitHub Pages deployment run to start...")
     url = f"https://api.github.com/repos/{REPO}/actions/runs"
     
+    # Account for clock skew between local machine and GitHub servers
+    check_time = since_time - timedelta(seconds=60)
+    
     run_id = None
     # Wait up to 3 minutes for Pages deployment to be triggered
     for _ in range(36):
@@ -98,7 +101,7 @@ def monitor_pages_deployment(since_time):
                     if created_at_str:
                         # Parse ISO 8601 string
                         created_time = datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
-                        if created_time > since_time:
+                        if created_time > check_time:
                             run_id = run["id"]
                             print(f"✅ Found Pages Deployment Run! ID: {run_id} | HTML URL: {run.get('html_url')}")
                             break
