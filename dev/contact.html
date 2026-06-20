@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact & Book Appointment | Maliyil Medical Centre</title>
+
+  <meta name="description"
+    content="Book an appointment at Maliyil Medical Centre, Changanassery. Expert diabetic care, lab services, and 24/7 pharmacy.">
+
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="icon" type="image/png" href="images/favicon.png">
+</head>
+
+<body>
+
+  <header class="header">
+    <div class="container header-container">
+      <div class="logo">
+        <a href="index.html">
+          <img src="images/logo.webp" alt="Maliyil Medical Centre" width="160" height="60">
+        </a>
+      </div>
+
+      <div class="menu-toggle" id="menu-toggle">
+        <i class="fa-solid fa-bars"></i>
+      </div>
+
+      <nav class="nav" id="nav-menu">
+        <a href="index.html">Home</a>
+        <a href="services.html">Services</a>
+        <a href="contact.html" class="btn-main">Book Appointment</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- TAB NAVIGATION -->
+  <div class="tab-container" style="margin-top: 30px;">
+    <button id="btn-book-tab" class="tab-btn active" onclick="switchTab('book-tab')">📅 Book Appointment</button>
+    <button id="btn-cancel-tab" class="tab-btn" onclick="switchTab('cancel-tab')">❌ Cancel Appointment</button>
+  </div>
+
+  <!-- BOOKING TAB CONTENT -->
+  <div id="book-tab" class="tab-content active">
+    <!-- DOCTOR APPOINTMENT SLOTS -->
+    <section class="services" style="padding-top: 20px;">
+      <div class="container">
+        <h2 class="section-title" style="margin-top: 10px;">Doctor Evening Appointment</h2>
+
+        <p style="text-align:center; margin-bottom:30px;">
+          Doctor Available: 5:00 PM – 8:30 PM<br>
+          Each Patient: 10 Minutes
+        </p>
+
+        <div style="text-align:center; margin-bottom:25px;">
+          <label style="font-weight:600;">
+            📅 Select Appointment Date
+          </label>
+          <br><br>
+          <input type="date" id="appointmentDate" style="
+            padding:12px;
+            font-size:16px;
+            border-radius:6px;
+            border:1px solid #ccc;
+          " onchange="loadBookedSlots()">
+        </div>
+
+        <div id="slotsLoader" class="spinner-container" style="display:none;">
+          <div class="spinner"></div>
+          <p>Checking slot availability...</p>
+        </div>
+
+        <div class="slots-grid" id="slotsGrid">
+          <!-- Slots will be rendered dynamically or initialized statics -->
+          <button class="slot-btn" onclick="openBookingModal('5:00 PM')">5:00 PM</button>
+          <button class="slot-btn" onclick="openBookingModal('5:10 PM')">5:10 PM</button>
+          <button class="slot-btn" onclick="openBookingModal('5:20 PM')">5:20 PM</button>
+          <button class="slot-btn" onclick="openBookingModal('5:30 PM')">5:30 PM</button>
+          <button class="slot-btn" onclick="openBookingModal('5:40 PM')">5:40 PM</button>
+          <button class="slot-btn" onclick="openBookingModal('5:50 PM')">5:50 PM</button>
+          <button class="slot-btn" onclick="openBookingModal('6:00 PM')">6:00 PM</button>
+          <button class="slot-btn" onclick="openBookingModal('6:10 PM')">6:10 PM</button>
+          <button class="slot-btn" onclick="openBookingModal('6:20 PM')">6:20 PM</button>
+          <button class="slot-btn" onclick="openBookingModal('6:30 PM')">6:30 PM</button>
+          <button class="slot-btn" onclick="openBookingModal('6:40 PM')">6:40 PM</button>
+          <button class="slot-btn" onclick="openBookingModal('6:50 PM')">6:50 PM</button>
+          <button class="slot-btn" onclick="openBookingModal('7:00 PM')">7:00 PM</button>
+          <button class="slot-btn" onclick="openBookingModal('7:10 PM')">7:10 PM</button>
+          <button class="slot-btn" onclick="openBookingModal('7:20 PM')">7:20 PM</button>
+          <button class="slot-btn" onclick="openBookingModal('7:30 PM')">7:30 PM</button>
+          <button class="slot-btn" onclick="openBookingModal('7:40 PM')">7:40 PM</button>
+          <button class="slot-btn" onclick="openBookingModal('7:50 PM')">7:50 PM</button>
+          <button class="slot-btn" onclick="openBookingModal('8:00 PM')">8:00 PM</button>
+          <button class="slot-btn" onclick="openBookingModal('8:10 PM')">8:10 PM</button>
+          <button class="slot-btn" onclick="openBookingModal('8:20 PM')">8:20 PM</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ADVANCED BOOKING SECTION -->
+    <section class="services">
+      <div class="container">
+        <h2 class="section-title">Advanced Booking</h2>
+
+        <div class="booking-widget">
+          <form class="contact-form" onsubmit="submitAdvancedBooking(event)">
+            <div class="form-row">
+              <select id="bookService" required>
+                <option value="" disabled selected>Select Service Required *</option>
+                <option value="Doctor Consultancy">👨‍⚕️ Doctor Consultancy</option>
+                <option value="Lab Test">🧪 Laboratory Test</option>
+                <option value="Pharmacy">💊 Pharmacy Medicines</option>
+              </select>
+              <input type="text" id="bookName" placeholder="Patient Full Name *" required>
+            </div>
+
+            <div class="form-row">
+              <input type="tel" id="bookPhone" placeholder="WhatsApp Number *" required>
+              <input type="date" id="bookDate" required>
+            </div>
+
+            <div class="form-row">
+              <select id="bookTime" required style="grid-column: span 2;">
+                <option value="" disabled selected>Select Slot *</option>
+                <option value="Morning (08:30 AM - 01:00 PM)">Morning Slot (08:30 AM - 01:00 PM)</option>
+                <option value="Evening (05:00 PM - 08:30 PM)">Evening Slot (05:00 PM - 08:30 PM)</option>
+              </select>
+            </div>
+
+            <textarea id="bookMessage"
+              placeholder="Any specific symptoms, required lab tests, or medicine list..."></textarea>
+            
+            <div id="advLoading" style="display:none; text-align:center; margin-bottom:15px;">
+              <div class="spinner" style="margin:auto;"></div>
+              <p style="margin-top:10px; font-size:14px; color:var(--text-muted);">Saving booking details...</p>
+            </div>
+            
+            <button type="submit" id="btnAdvSubmit" class="btn-submit">Confirm Booking Request</button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- CANCELLATION TAB CONTENT -->
+  <div id="cancel-tab" class="tab-content">
+    <section class="services" style="padding-top: 20px;">
+      <div class="container">
+        <h2 class="section-title" style="margin-top: 10px;">Cancel Appointment</h2>
+        <div class="booking-widget" style="max-width: 500px; margin: auto;">
+          <form class="contact-form" onsubmit="submitPatientCancellation(event)">
+            <div class="form-row" style="grid-template-columns: 1fr; margin-bottom:15px;">
+              <label style="font-weight:600;">📅 Appointment Date</label>
+              <input type="date" id="cancelDate" required>
+            </div>
+            
+            <div class="form-row" style="grid-template-columns: 1fr; margin-bottom:15px;">
+              <label style="font-weight:600;">📱 WhatsApp Number</label>
+              <input type="tel" id="cancelPhone" placeholder="Enter phone number booked with *" required>
+            </div>
+
+            <div class="form-row" style="grid-template-columns: 1fr; margin-bottom:20px;">
+              <label style="font-weight:600;">⏰ Booked Slot to Cancel</label>
+              <select id="cancelTime" required>
+                <option value="" disabled selected>Select the slot to cancel *</option>
+                <option value="5:00 PM">5:00 PM</option>
+                <option value="5:10 PM">5:10 PM</option>
+                <option value="5:20 PM">5:20 PM</option>
+                <option value="5:30 PM">5:30 PM</option>
+                <option value="5:40 PM">5:40 PM</option>
+                <option value="5:50 PM">5:50 PM</option>
+                <option value="6:00 PM">6:00 PM</option>
+                <option value="6:10 PM">6:10 PM</option>
+                <option value="6:20 PM">6:20 PM</option>
+                <option value="6:30 PM">6:30 PM</option>
+                <option value="6:40 PM">6:40 PM</option>
+                <option value="6:50 PM">6:50 PM</option>
+                <option value="7:00 PM">7:00 PM</option>
+                <option value="7:10 PM">7:10 PM</option>
+                <option value="7:20 PM">7:20 PM</option>
+                <option value="7:30 PM">7:30 PM</option>
+                <option value="7:40 PM">7:40 PM</option>
+                <option value="7:50 PM">7:50 PM</option>
+                <option value="8:00 PM">8:00 PM</option>
+                <option value="8:10 PM">8:10 PM</option>
+                <option value="8:20 PM">8:20 PM</option>
+              </select>
+            </div>
+
+            <div id="cancelLoading" style="display:none; text-align:center; margin-bottom:15px;">
+              <div class="spinner" style="margin:auto;"></div>
+              <p style="margin-top:10px; font-size:14px; color:var(--text-muted);">Processing cancellation...</p>
+            </div>
+
+            <button type="submit" id="btnCancelSubmit" class="btn-submit" style="background:#e74c3c;">Request Cancellation</button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- BOOKING MODAL -->
+  <div id="bookingModal" class="modal-overlay">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeModal()">&times;</span>
+      <h3 style="color:var(--primary-blue); margin-bottom:20px;">Complete Your Booking</h3>
+      <p id="modalSelectedDetails" style="font-weight:600; margin-bottom:20px; color:var(--accent-blue);"></p>
+      
+      <form class="contact-form" onsubmit="submitPatientBooking(event)">
+        <input type="hidden" id="modalDate">
+        <input type="hidden" id="modalTime">
+
+        <div class="form-row" style="grid-template-columns: 1fr; margin-bottom: 15px;">
+          <input type="text" id="modalName" placeholder="Patient Full Name *" required>
+        </div>
+        
+        <div class="form-row" style="grid-template-columns: 1fr; margin-bottom: 15px;">
+          <input type="tel" id="modalPhone" placeholder="WhatsApp Number *" required>
+        </div>
+        
+        <div class="form-row" style="grid-template-columns: 1fr; margin-bottom: 15px;">
+          <select id="modalService" required>
+            <option value="" disabled selected>Select Service Required *</option>
+            <option value="Doctor Consultancy">👨‍⚕️ Doctor Consultancy</option>
+            <option value="Lab Test">🧪 Laboratory Test</option>
+            <option value="Pharmacy">💊 Pharmacy Medicines</option>
+          </select>
+        </div>
+        
+        <div class="form-row" style="grid-template-columns: 1fr; margin-bottom: 15px;">
+          <textarea id="modalDetails" placeholder="Specific symptoms or details (optional)"></textarea>
+        </div>
+        
+        <div id="modalLoading" style="display:none; text-align:center; margin-bottom: 15px;">
+          <div class="spinner" style="margin:auto;"></div>
+          <p style="margin-top:10px; font-size:14px; color:var(--text-muted);">Securing your slot...</p>
+        </div>
+        
+        <button type="submit" id="btnModalSubmit" class="btn-submit">Confirm & Message WhatsApp</button>
+      </form>
+    </div>
+  </div>
+
+  <section class="contact">
+    <div class="container">
+      <div class="contact-grid">
+        <div class="contact-card">
+          <i class="fa-solid fa-location-dot"></i>
+          <h3>Address</h3>
+          <p>Maliyil Medical Centre, Kurissumoodu, Changanassery, Kerala</p>
+        </div>
+
+        <div class="contact-card">
+          <i class="fa-solid fa-phone"></i>
+          <h3>Phone</h3>
+          <p>+91 8943904357</p>
+        </div>
+
+        <div class="contact-card">
+          <i class="fa-solid fa-clock"></i>
+          <h3>Working Hours</h3>
+          <p>Mon – Sat: 08:30 AM – 08:30 PM</p>
+        </div>
+      </div>
+
+      <div style="margin-top:50px;">
+        <h2 class="section-title">Find Us on Map</h2>
+        <iframe
+          src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d1099.1282181165736!2d76.5483012987372!3d9.453321953961831!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3b0625fd7ff3248b%3A0x5011b2dc73ebc284!2sMaliyil%20Medical%20centre!5e1!3m2!1sen!2sin!4v1778557813801!5m2!1sen!2sin"
+          width="100%" height="400" style="border:0; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"
+          allowfullscreen="" loading="lazy"></iframe>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <p>📍 Near SB High School | Vazhoor Road | Changanassery</p>
+      <p>© 2026 Maliyil Medical Centre. Designed by Max Efex.</p>
+    </div>
+  </footer>
+
+  <a href="https://wa.me/918943904357" class="whatsapp-float" target="_blank">
+    <i class="fab fa-whatsapp"></i>
+  </a>
+
+  <script>
+    // ============================================================
+    // CONFIGURATION & AUTO-DETECTION
+    // ============================================================
+    const DEV_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwX_YOUR_DEV_URL_PLACEHOLDER/exec';
+    const PROD_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxS_YOUR_PROD_URL_PLACEHOLDER/exec';
+
+    const IS_DEV = window.location.hostname === 'localhost' || 
+                   window.location.hostname === '127.0.0.1' || 
+                   window.location.pathname.includes('/dev/');
+
+    const SCRIPT_URL = IS_DEV ? DEV_SCRIPT_URL : PROD_SCRIPT_URL;
+
+    // Mobile Menu Toggle
+    const toggle = document.getElementById("menu-toggle");
+    const nav = document.getElementById("nav-menu");
+    if (toggle) {
+      toggle.addEventListener("click", function () {
+        nav.classList.toggle("active");
+      });
+    }
+
+    // Set minimum date to today for date pickers
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('appointmentDate').min = today;
+    document.getElementById('bookDate').min = today;
+    document.getElementById('cancelDate').min = today;
+
+    // Set default date to today
+    document.getElementById('appointmentDate').value = today;
+    loadBookedSlots();
+
+    // ============================================================
+    // TAB NAVIGATION
+    // ============================================================
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+      document.getElementById(tabId).classList.add('active');
+      if (tabId === 'book-tab') {
+        document.getElementById('btn-book-tab').classList.add('active');
+      } else {
+        document.getElementById('btn-cancel-tab').classList.add('active');
+      }
+    }
+
+    // ============================================================
+    // REAL-TIME SLOT AVAILABILITY CHECK
+    // ============================================================
+    function loadBookedSlots() {
+      const selectedDate = document.getElementById('appointmentDate').value;
+      if (!selectedDate) return;
+
+      const grid = document.getElementById('slotsGrid');
+      const loader = document.getElementById('slotsLoader');
+
+      grid.style.opacity = '0.3';
+      grid.style.pointerEvents = 'none';
+      loader.style.display = 'flex';
+
+      fetch(`${SCRIPT_URL}?action=getSlots&date=${selectedDate}`)
+        .then(response => response.json())
+        .then(res => {
+          if (res.status === 'success') {
+            const bookedSlots = res.data || [];
+            
+            // Loop through all buttons in slotsGrid
+            const buttons = grid.getElementsByClassName('slot-btn');
+            for (let btn of buttons) {
+              const timeText = btn.textContent.trim();
+              if (bookedSlots.includes(timeText)) {
+                btn.classList.add('disabled');
+                btn.disabled = true;
+              } else {
+                btn.classList.remove('disabled');
+                btn.disabled = false;
+              }
+            }
+          }
+        })
+        .catch(err => console.error("Error fetching slots:", err))
+        .finally(() => {
+          grid.style.opacity = '1';
+          grid.style.pointerEvents = 'auto';
+          loader.style.display = 'none';
+        });
+    }
+
+    // ============================================================
+    // BOOKING DIALOG MODAL FLOW
+    // ============================================================
+    function openBookingModal(time) {
+      const date = document.getElementById('appointmentDate').value;
+      if (!date) {
+        alert("Please select a date first.");
+        return;
+      }
+      document.getElementById('modalDate').value = date;
+      document.getElementById('modalTime').value = time;
+      
+      const formattedDate = new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      document.getElementById('modalSelectedDetails').textContent = `📅 ${formattedDate} at ⏰ ${time}`;
+      
+      document.getElementById('bookingModal').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('bookingModal').classList.remove('active');
+    }
+
+    // Submission from Modal Form (Evening Slots)
+    function submitPatientBooking(event) {
+      event.preventDefault();
+      
+      const date = document.getElementById('modalDate').value;
+      const time = document.getElementById('modalTime').value;
+      const name = document.getElementById('modalName').value;
+      const phone = document.getElementById('modalPhone').value;
+      const service = document.getElementById('modalService').value;
+      const details = document.getElementById('modalDetails').value;
+
+      const loader = document.getElementById('modalLoading');
+      const submitBtn = document.getElementById('btnModalSubmit');
+
+      loader.style.display = 'block';
+      submitBtn.style.display = 'none';
+
+      const payload = {
+        action: 'book',
+        date: date,
+        time: time,
+        name: name,
+        phone: phone,
+        service: service,
+        details: details
+      };
+
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors', // standard for Apps Script to avoid CORS preflight blocks
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(() => {
+        // Since no-cors hides the response, we assume success
+        alert("Slot requested in database! Opening WhatsApp to send confirmation message.");
+        closeModal();
+        loadBookedSlots(); // refresh grid
+
+        // Clear modal form
+        document.getElementById('modalName').value = '';
+        document.getElementById('modalPhone').value = '';
+        document.getElementById('modalService').selectedIndex = 0;
+        document.getElementById('modalDetails').value = '';
+
+        // Redirect to WhatsApp
+        const msg = `*Maliyil Medical Centre - Evening Appointment*%0A%0A` +
+          `*Patient:* ${name}%0A` +
+          `*Service:* ${service}%0A` +
+          `*WhatsApp:* ${phone}%0A` +
+          `*Date:* ${date}%0A` +
+          `*Slot:* ${time}%0A` +
+          `*Details:* ${details}`;
+        window.open(`https://wa.me/918943904357?text=${msg}`, '_blank');
+      })
+      .catch(err => {
+        alert("An error occurred. Please try again.");
+        console.error(err);
+      })
+      .finally(() => {
+        loader.style.display = 'none';
+        submitBtn.style.display = 'block';
+      });
+    }
+
+    // Submission from Advanced Booking Form (Bottom Form)
+    function submitAdvancedBooking(event) {
+      event.preventDefault();
+      
+      const service = document.getElementById('bookService').value;
+      const name = document.getElementById('bookName').value;
+      const phone = document.getElementById('bookPhone').value;
+      const date = document.getElementById('bookDate').value;
+      const slot = document.getElementById('bookTime').value;
+      const note = document.getElementById('bookMessage').value;
+
+      const loader = document.getElementById('advLoading');
+      const submitBtn = document.getElementById('btnAdvSubmit');
+
+      loader.style.display = 'block';
+      submitBtn.style.display = 'none';
+
+      const payload = {
+        action: 'book',
+        date: date,
+        time: slot,
+        name: name,
+        phone: phone,
+        service: service,
+        details: note
+      };
+
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(() => {
+        alert("Booking details logged. Redirecting to WhatsApp to send message.");
+        
+        // Clear advanced booking form
+        document.getElementById('bookName').value = '';
+        document.getElementById('bookPhone').value = '';
+        document.getElementById('bookService').selectedIndex = 0;
+        document.getElementById('bookTime').selectedIndex = 0;
+        document.getElementById('bookMessage').value = '';
+
+        // Redirect to WhatsApp
+        const msg = `*Maliyil Medical Centre - Advanced Booking*%0A%0A` +
+          `*Patient:* ${name}%0A` +
+          `*Service:* ${service}%0A` +
+          `*WhatsApp:* ${phone}%0A` +
+          `*Date:* ${date}%0A` +
+          `*Slot:* ${slot}%0A` +
+          `*Details:* ${note}`;
+        window.open(`https://wa.me/918943904357?text=${msg}`, '_blank');
+      })
+      .catch(err => {
+        alert("An error occurred. Please try again.");
+        console.error(err);
+      })
+      .finally(() => {
+        loader.style.display = 'none';
+        submitBtn.style.display = 'block';
+      });
+    }
+
+    // ============================================================
+    // CLIENT CANCELLATION FLOW
+    // ============================================================
+    function submitPatientCancellation(event) {
+      event.preventDefault();
+
+      const date = document.getElementById('cancelDate').value;
+      const phone = document.getElementById('cancelPhone').value;
+      const time = document.getElementById('cancelTime').value;
+
+      if (!date || !phone || !time) {
+        alert("Please fill in all details.");
+        return;
+      }
+
+      const loader = document.getElementById('cancelLoading');
+      const submitBtn = document.getElementById('btnCancelSubmit');
+
+      loader.style.display = 'block';
+      submitBtn.style.display = 'none';
+
+      const payload = {
+        action: 'cancel',
+        date: date,
+        phone: phone,
+        time: time
+      };
+
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(() => {
+        alert("Cancellation request sent! If matching booking existed, it has been marked as Cancelled.");
+        
+        // Clear fields
+        document.getElementById('cancelPhone').value = '';
+        document.getElementById('cancelTime').selectedIndex = 0;
+        loadBookedSlots(); // Refresh grid
+      })
+      .catch(err => {
+        alert("An error occurred. Please check details and try again.");
+        console.error(err);
+      })
+      .finally(() => {
+        loader.style.display = 'none';
+        submitBtn.style.display = 'block';
+      });
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff Portal | Maliyil Medical Centre</title>
+  
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="icon" type="image/png" href="images/favicon.png">
+</head>
+<body style="background:#F4F7FB;">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="container header-container">
+      <div class="logo">
+        <a href="index.html">
+          <img src="images/logo.webp" alt="Maliyil Medical Centre" width="160" height="60">
+        </a>
+      </div>
+      <div>
+        <span style="font-weight:700; color:var(--primary-blue);">Front Office Dashboard</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- AUTHENTICATION CONTAINER -->
+  <div id="authContainer" class="staff-auth-container">
+    <i class="fa-solid fa-lock" style="font-size:40px; color:var(--primary-blue); margin-bottom:15px;"></i>
+    <h2>Staff Access Required</h2>
+    <form onsubmit="handleLogin(event)">
+      <input type="password" id="staffPassword" placeholder="Enter Staff Password" required>
+      <button type="submit" id="btnLogin" class="btn-submit">Verify Access</button>
+    </form>
+    <p id="authError" style="color:#e74c3c; display:none; margin-top:15px; font-weight:600;"></p>
+  </div>
+
+  <!-- DASHBOARD CONTAINER -->
+  <div id="dashboardContainer" class="staff-dashboard">
+    <section class="services" style="padding-top:30px;">
+      <div class="container">
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-bottom:30px;">
+          <div>
+            <h2 style="color:var(--primary-blue); margin:0;">Daily Schedule Manager</h2>
+            <p style="color:var(--text-muted); margin:0;">View and book phone-in appointments in real-time</p>
+          </div>
+          <div>
+            <button onclick="handleLogout()" class="tab-btn" style="background:#e74c3c; color:white; border-color:#e74c3c;">Logout</button>
+          </div>
+        </div>
+
+        <!-- DATE SELECTOR -->
+        <div class="booking-widget" style="margin: 0 0 30px 0; max-width:100%;">
+          <div style="display:flex; align-items:center; justify-content:center; gap:15px; flex-wrap:wrap;">
+            <label style="font-weight:600; font-size:18px;">📅 Working Date:</label>
+            <input type="date" id="dashboardDate" style="
+              padding:12px;
+              font-size:16px;
+              border-radius:6px;
+              border:1px solid #ccc;
+              width: 200px;
+            " onchange="loadStaffSchedule()">
+          </div>
+        </div>
+
+        <div id="dashboardLoader" class="spinner-container" style="display:none;">
+          <div class="spinner"></div>
+          <p>Syncing schedule with Google Sheets...</p>
+        </div>
+
+        <!-- GRID MATRIX -->
+        <div class="slots-grid" id="staffSlotsGrid">
+          <!-- Populated dynamically via JS -->
+        </div>
+
+      </div>
+    </section>
+  </div>
+
+  <!-- STAFF QUICK BOOK MODAL -->
+  <div id="staffBookModal" class="modal-overlay">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeModal()">&times;</span>
+      <h3 style="color:var(--primary-blue); margin-bottom:15px;">Book Appointment (Staff Mode)</h3>
+      <p id="staffModalLabel" style="font-weight:600; color:var(--accent-blue); margin-bottom:20px;"></p>
+      
+      <form class="contact-form" onsubmit="submitStaffBooking(event)">
+        <input type="hidden" id="staffModalDate">
+        <input type="hidden" id="staffModalTime">
+
+        <div class="form-row" style="grid-template-columns: 1fr; margin-bottom:15px;">
+          <input type="text" id="staffBookName" placeholder="Patient Full Name *" required>
+        </div>
+
+        <div class="form-row" style="grid-template-columns: 1fr; margin-bottom:15px;">
+          <input type="tel" id="staffBookPhone" placeholder="Contact Phone Number *" required>
+        </div>
+
+        <div class="form-row" style="grid-template-columns: 1fr; margin-bottom:15px;">
+          <select id="staffBookService" required>
+            <option value="" disabled selected>Select Service Required *</option>
+            <option value="Doctor Consultancy">👨‍⚕️ Doctor Consultancy</option>
+            <option value="Lab Test">🧪 Laboratory Test</option>
+            <option value="Pharmacy">💊 Pharmacy Medicines</option>
+          </select>
+        </div>
+
+        <div class="form-row" style="grid-template-columns: 1fr; margin-bottom:15px;">
+          <textarea id="staffBookDetails" placeholder="Front office notes, symptoms, or special instructions..."></textarea>
+        </div>
+
+        <div id="staffBookLoader" style="display:none; text-align:center; margin-bottom:15px;">
+          <div class="spinner" style="margin:auto;"></div>
+          <p style="margin-top:10px; font-size:14px; color:var(--text-muted);">Writing booking to Google Sheet...</p>
+        </div>
+
+        <button type="submit" id="btnStaffBookSubmit" class="btn-submit">Confirm Booking</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // ============================================================
+    // CONFIGURATION & AUTO-DETECTION
+    // ============================================================
+    const DEV_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwX_YOUR_DEV_URL_PLACEHOLDER/exec';
+    const PROD_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxS_YOUR_PROD_URL_PLACEHOLDER/exec';
+
+    const IS_DEV = window.location.hostname === 'localhost' || 
+                   window.location.hostname === '127.0.0.1' || 
+                   window.location.pathname.includes('/dev/');
+
+    const SCRIPT_URL = IS_DEV ? DEV_SCRIPT_URL : PROD_SCRIPT_URL;
+
+    // Time Slots Configuration
+    const TIME_SLOTS = [
+      '5:00 PM', '5:10 PM', '5:20 PM', '5:30 PM', '5:40 PM', '5:50 PM',
+      '6:00 PM', '6:10 PM', '6:20 PM', '6:30 PM', '6:40 PM', '6:50 PM',
+      '7:00 PM', '7:10 PM', '7:20 PM', '7:30 PM', '7:40 PM', '7:50 PM',
+      '8:00 PM', '8:10 PM', '8:20 PM'
+    ];
+
+    let cachedPassword = localStorage.getItem('staff_password') || '';
+
+    // Check on Load
+    window.addEventListener('DOMContentLoaded', () => {
+      // 1. Check URL query parameters for password login bypass
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlPassword = urlParams.get('password');
+      
+      if (urlPassword) {
+        cachedPassword = urlPassword;
+        localStorage.setItem('staff_password', urlPassword);
+        // Clean URL to hide password
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
+      // Initialize date selector to today
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('dashboardDate').value = today;
+
+      if (cachedPassword) {
+        validateSavedSession();
+      } else {
+        showAuth();
+      }
+    });
+
+    // ============================================================
+    // AUTHENTICATION LOGIC
+    // ============================================================
+    function showAuth() {
+      document.getElementById('authContainer').style.display = 'block';
+      document.getElementById('dashboardContainer').style.display = 'none';
+    }
+
+    function showDashboard() {
+      document.getElementById('authContainer').style.display = 'none';
+      document.getElementById('dashboardContainer').style.display = 'block';
+      loadStaffSchedule();
+    }
+
+    function handleLogin(event) {
+      event.preventDefault();
+      const passwordInput = document.getElementById('staffPassword').value;
+      const errorMsg = document.getElementById('authError');
+      const btn = document.getElementById('btnLogin');
+
+      errorMsg.style.display = 'none';
+      btn.disabled = true;
+      btn.textContent = 'Verifying...';
+
+      const payload = {
+        action: 'verify',
+        password: passwordInput,
+        date: '2026-01-01' // dummy date required by doPost
+      };
+
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(() => {
+        // Apps Script returns no-cors response. We attempt to load the schedule.
+        // If password is wrong, the loadStaffSchedule call will fail/return unauthorized.
+        cachedPassword = passwordInput;
+        localStorage.setItem('staff_password', passwordInput);
+        
+        // Quick verification check: test-load
+        verifySessionOnServer(passwordInput);
+      })
+      .catch(err => {
+        errorMsg.textContent = 'Connection error. Please try again.';
+        errorMsg.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Verify Access';
+      });
+    }
+
+    function verifySessionOnServer(password) {
+      const today = document.getElementById('dashboardDate').value;
+      fetch(`${SCRIPT_URL}?action=getSlots&date=${today}&staff=true&password=${encodeURIComponent(password)}`)
+        .then(response => response.json())
+        .then(res => {
+          if (res.status === 'success') {
+            showDashboard();
+          } else {
+            throw new Error(res.message || 'Unauthorized');
+          }
+        })
+        .catch(err => {
+          localStorage.removeItem('staff_password');
+          cachedPassword = '';
+          const errorMsg = document.getElementById('authError');
+          errorMsg.textContent = 'Invalid staff password. Access Denied.';
+          errorMsg.style.display = 'block';
+          document.getElementById('btnLogin').disabled = false;
+          document.getElementById('btnLogin').textContent = 'Verify Access';
+          showAuth();
+        });
+    }
+
+    function validateSavedSession() {
+      verifySessionOnServer(cachedPassword);
+    }
+
+    function handleLogout() {
+      localStorage.removeItem('staff_password');
+      cachedPassword = '';
+      document.getElementById('staffPassword').value = '';
+      showAuth();
+      document.getElementById('btnLogin').disabled = false;
+      document.getElementById('btnLogin').textContent = 'Verify Access';
+    }
+
+    // ============================================================
+    // DASHBOARD MANAGER (SCHEDULE RENDERING)
+    // ============================================================
+    function loadStaffSchedule() {
+      const selectedDate = document.getElementById('dashboardDate').value;
+      if (!selectedDate) return;
+
+      const grid = document.getElementById('staffSlotsGrid');
+      const loader = document.getElementById('dashboardLoader');
+
+      grid.style.opacity = '0.3';
+      grid.style.pointerEvents = 'none';
+      loader.style.display = 'flex';
+
+      fetch(`${SCRIPT_URL}?action=getSlots&date=${selectedDate}&staff=true&password=${encodeURIComponent(cachedPassword)}`)
+        .then(response => response.json())
+        .then(res => {
+          if (res.status === 'success') {
+            const bookings = res.data || []; // list of objects { time, name, phone, service, details, bookedBy }
+            renderGrid(bookings);
+          } else {
+            alert("Session expired. Please log in again.");
+            handleLogout();
+          }
+        })
+        .catch(err => {
+          console.error("Error loading schedule:", err);
+          alert("Could not load schedule. Check internet or API URL.");
+        })
+        .finally(() => {
+          grid.style.opacity = '1';
+          grid.style.pointerEvents = 'auto';
+          loader.style.display = 'none';
+        });
+    }
+
+    function renderGrid(bookings) {
+      const grid = document.getElementById('staffSlotsGrid');
+      grid.innerHTML = ''; // clear grid
+
+      TIME_SLOTS.forEach(time => {
+        // Find if this time slot is booked
+        const booking = bookings.find(b => b.time === time);
+        
+        const card = document.createElement('div');
+        card.className = 'staff-slot-card';
+
+        if (!booking) {
+          // Free Slot Layout
+          card.classList.add('free');
+          card.innerHTML = `
+            <div class="staff-slot-header">
+              <span class="staff-slot-time">${time}</span>
+              <span class="staff-slot-badge free">Free</span>
+            </div>
+            <div class="staff-patient-info" style="text-align:center; padding:15px 0;">
+              <span style="color:#2ecc71; font-weight:600;"><i class="fa-solid fa-circle-check"></i> Available</span>
+            </div>
+            <button class="btn-staff-action book" onclick="openStaffBookingModal('${time}')">Book Slot</button>
+          `;
+        } else {
+          // Booked Slot Layout
+          const isStaffBooked = booking.bookedBy === 'Staff';
+          card.classList.add(isStaffBooked ? 'staff-booked' : 'booked');
+          
+          card.innerHTML = `
+            <div class="staff-slot-header">
+              <span class="staff-slot-time">${time}</span>
+              <span class="staff-slot-badge ${isStaffBooked ? 'staff-booked' : 'booked'}">
+                ${isStaffBooked ? 'Staff' : 'Web'}
+              </span>
+            </div>
+            <div class="staff-patient-info">
+              <strong>👤 Patient:</strong> ${booking.name}<br>
+              <strong>📞 Phone:</strong> <a href="tel:${booking.phone}">${booking.phone}</a><br>
+              <strong>🩹 Service:</strong> ${booking.service}<br>
+              ${booking.details ? `<strong>📝 Notes:</strong> ${booking.details}` : ''}
+            </div>
+            <button class="btn-staff-action cancel" onclick="cancelSlot('${time}', '${booking.phone}')">Cancel Slot</button>
+          `;
+        }
+
+        grid.appendChild(card);
+      });
+    }
+
+    // ============================================================
+    // STAFF BOOKING DIALOG FLOW
+    // ============================================================
+    function openStaffBookingModal(time) {
+      const date = document.getElementById('dashboardDate').value;
+      
+      document.getElementById('staffModalDate').value = date;
+      document.getElementById('staffModalTime').value = time;
+      
+      const formattedDate = new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      document.getElementById('staffModalLabel').textContent = `📅 ${formattedDate} at ⏰ ${time}`;
+      
+      document.getElementById('staffBookModal').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('staffBookModal').classList.remove('active');
+    }
+
+    function submitStaffBooking(event) {
+      event.preventDefault();
+
+      const date = document.getElementById('staffModalDate').value;
+      const time = document.getElementById('staffModalTime').value;
+      const name = document.getElementById('staffBookName').value;
+      const phone = document.getElementById('staffBookPhone').value;
+      const service = document.getElementById('staffBookService').value;
+      const details = document.getElementById('staffBookDetails').value;
+
+      const loader = document.getElementById('staffBookLoader');
+      const submitBtn = document.getElementById('btnStaffBookSubmit');
+
+      loader.style.display = 'block';
+      submitBtn.style.display = 'none';
+
+      const payload = {
+        action: 'staffBook',
+        password: cachedPassword,
+        date: date,
+        time: time,
+        name: name,
+        phone: phone,
+        service: service,
+        details: details
+      };
+
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(() => {
+        alert("Booking completed successfully!");
+        closeModal();
+        loadStaffSchedule(); // refresh dashboard
+
+        // Reset form fields
+        document.getElementById('staffBookName').value = '';
+        document.getElementById('staffBookPhone').value = '';
+        document.getElementById('staffBookService').selectedIndex = 0;
+        document.getElementById('staffBookDetails').value = '';
+      })
+      .catch(err => {
+        alert("Error booking slot. Please try again.");
+        console.error(err);
+      })
+      .finally(() => {
+        loader.style.display = 'none';
+        submitBtn.style.display = 'block';
+      });
+    }
+
+    // ============================================================
+    // STAFF CANCELLATION FLOW
+    // ============================================================
+    function cancelSlot(time, phone) {
+      const date = document.getElementById('dashboardDate').value;
+      if (!confirm(`Are you sure you want to cancel the ${time} appointment for patient with phone: ${phone}?`)) {
+        return;
+      }
+
+      const grid = document.getElementById('staffSlotsGrid');
+      const loader = document.getElementById('dashboardLoader');
+
+      grid.style.opacity = '0.3';
+      grid.style.pointerEvents = 'none';
+      loader.style.display = 'flex';
+
+      const payload = {
+        action: 'staffCancel',
+        password: cachedPassword,
+        date: date,
+        time: time,
+        phone: phone
+      };
+
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(() => {
+        alert("Appointment successfully cancelled.");
+        loadStaffSchedule(); // refresh
+      })
+      .catch(err => {
+        alert("Error cancelling appointment.");
+        console.error(err);
+        grid.style.opacity = '1';
+        grid.style.pointerEvents = 'auto';
+        loader.style.display = 'none';
+      });
+    }
+  </script>
+</body>
+</html>
