@@ -3,8 +3,12 @@ import sys
 import subprocess
 import time
 import urllib.request
+import urllib.error
 import json
 from datetime import datetime, timezone, timedelta
+
+class RateLimitError(Exception):
+    pass
 
 REPO = "maliyil-clinic/maliyil-clinic.github.io"
 HEADERS = {"User-Agent": "Python-Deploy-Monitor"}
@@ -31,6 +35,11 @@ def api_get(url):
     try:
         with urllib.request.urlopen(req) as response:
             return json.loads(response.read().decode())
+    except urllib.error.HTTPError as e:
+        if e.code == 403:
+            raise RateLimitError("GitHub API rate limit exceeded.")
+        print(f"API Request Failed for {url}: {e}")
+        return None
     except Exception as e:
         print(f"API Request Failed for {url}: {e}")
         return None
@@ -179,12 +188,18 @@ def main():
     commit_sha = get_latest_sha()
     print(f"📌 Pushed Commit SHA: {commit_sha}")
     
-    # Step 1: Wait for custom builder
-    completion_time = monitor_workflow(commit_sha, branch_name)
-    
-    # Step 2: Wait for Pages hosting deploy
-    monitor_pages_deployment(completion_time)
-    
+    try:
+        completion_time = monitor_workflow(commit_sha, branch_name)
+        monitor_pages_deployment(completion_time)
+    except RateLimitError:
+        print("\n⚠️ GitHub API rate limit reached. Skipping live deployment monitoring.")
+        print("Your changes were pushed successfully and are building on GitHub.")
+        print("Please verify manually on the site in ~30 seconds:")
+        if env == "dev":
+            print("   👉 https://maliyil-clinic.github.io/dev/")
+        else:
+            print("   👉 https://maliyil-clinic.github.io/")
+            
     # Switch back to main for prod, or keep dev for dev
     if env == "dev" and get_current_branch() != "dev":
         run_git("git checkout dev")
