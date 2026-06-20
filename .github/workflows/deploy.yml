@@ -25,17 +25,18 @@ jobs:
 
       - name: Deploy to gh-pages Branch
         run: |
-          # Create a temporary directory to check out the deployment branch
-          mkdir ../build-dir
-          
-          # Clone the existing gh-pages branch or initialize it if it doesn't exist
-          git clone --branch gh-pages https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git ../build-dir || {
-            mkdir ../build-dir
+          # Try to clone the existing gh-pages branch
+          if git clone --branch gh-pages https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git ../build-dir; then
+            echo "Successfully cloned existing gh-pages branch"
+          else
+            echo "gh-pages branch not found, initializing a new one..."
+            rm -rf ../build-dir
+            mkdir -p ../build-dir
             cd ../build-dir
             git init
             git checkout -b gh-pages
             cd -
-          }
+          fi
           
           cd ../build-dir
           
