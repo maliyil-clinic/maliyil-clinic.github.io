@@ -1,0 +1,67 @@
+name: Deploy Website (Dev / Prod)
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Deploy to gh-pages Branch
+        run: |
+          # Create a temporary directory to check out the deployment branch
+          mkdir ../build-dir
+          
+          # Clone the existing gh-pages branch or initialize it if it doesn't exist
+          git clone --branch gh-pages https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git ../build-dir || {
+            mkdir ../build-dir
+            cd ../build-dir
+            git init
+            git checkout -b gh-pages
+            cd -
+          }
+          
+          cd ../build-dir
+          
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            # Production: Deploy to the root of the site, but preserve the dev/ folder
+            echo "Deploying Production (main branch) to root..."
+            
+            # Remove all files except .git and the "dev" directory
+            find . -maxdepth 1 -not -name '.' -not -name '..' -not -name '.git' -not -name 'dev' -exec rm -rf {} +
+            
+            # Copy files from checkout workspace (excluding git/github/dev)
+            rsync -av --exclude='.git' --exclude='.github' --exclude='dev' $GITHUB_WORKSPACE/ .
+            
+          elif [ "${{ github.ref_name }}" = "dev" ]; then
+            # Development: Deploy into the "dev" directory
+            echo "Deploying Development (dev branch) to /dev..."
+            
+            # Create dev directory and clear its old contents
+            mkdir -p dev
+            rm -rf dev/*
+            
+            # Copy files from checkout workspace into dev/ (excluding git/github/dev)
+            rsync -av --exclude='.git' --exclude='.github' --exclude='dev' $GITHUB_WORKSPACE/ dev/
+          fi
+          
+          # Commit and Push changes
+          git add -A
+          git diff-index --quiet HEAD || git commit -m "Deploy ${{ github.ref_name }} to gh-pages [skip ci]"
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git gh-pages
