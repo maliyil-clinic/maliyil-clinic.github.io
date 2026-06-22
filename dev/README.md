@@ -143,6 +143,17 @@ function verifyPassword(enteredPassword) {
   }
 }
 
+// Helper to check if a YYYY-MM-DD date is Sunday
+function isDateSunday(dateStr) {
+  try {
+    const parts = dateStr.split('-');
+    const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    return d.getDay() === 0;
+  } catch (e) {
+    return false;
+  }
+}
+
 function doGet(e) {
   try {
     const action = e.parameter.action;
@@ -157,10 +168,38 @@ function doGet(e) {
       return createJsonResponse({ status: 'error', message: 'Unauthorized access.' });
     }
     
+    // Check if Sunday
+    if (isDateSunday(date)) {
+      return createJsonResponse({ status: 'success', isSunday: true });
+    }
+    
     const sheet = getOrCreateMonthlySheet(date);
     const data = sheet.getDataRange().getValues();
     const results = [];
+    let isDoctorOff = false;
+    let doctorOffReason = '';
     
+    // First, scan for a Full Day block
+    for (let i = 1; i < data.length; i++) {
+      const rowDate = formatDate(data[i][COLUMNS.DATE - 1]);
+      const rowStatus = data[i][COLUMNS.STATUS - 1];
+      const rowTime = formatTime(data[i][COLUMNS.TIME - 1]);
+      const rowName = data[i][COLUMNS.NAME - 1];
+      
+      if (rowDate === date && rowStatus !== 'Cancelled') {
+        if (rowTime === 'Full Day' && rowName === 'Doctor Off') {
+          isDoctorOff = true;
+          doctorOffReason = data[i][COLUMNS.DETAILS - 1] || 'Doctor is off-duty today.';
+          break;
+        }
+      }
+    }
+    
+    if (isDoctorOff) {
+      return createJsonResponse({ status: 'success', doctorOff: true, reason: doctorOffReason });
+    }
+    
+    // If not off for full day, compile normal list
     for (let i = 1; i < data.length; i++) {
       const rowDate = formatDate(data[i][COLUMNS.DATE - 1]);
       const rowStatus = data[i][COLUMNS.STATUS - 1];
@@ -205,22 +244,19 @@ function doPost(e) {
     }
     
     if (!date) throw new Error('Date is required.');
+    
+    // Check if Sunday
+    if (isDateSunday(date)) {
+      throw new Error('Appointments cannot be scheduled on Sundays.');
+    }
+    
     const sheet = getOrCreateMonthlySheet(date);
     
-    // Booking
-    if (action === 'book' || action === 'staffBook') {
-      const time = params.time;
-      const name = params.name;
-      const phone = params.phone;
-      const service = params.service;
-      const details = params.details || '';
-      
-      let bookedBy = 'Patient';
-      
-      if (action === 'staffBook') {
-        if (!verifyPassword(password)) throw new Error('Unauthorized.');
-        bookedBy = 'Staff';
-      }
+    // 1. setDoctorOff Action
+    if (action === 'setDoctorOff') {
+      if (!verifyPassword(password)) throw new Error('Unauthorized.');
+      const time = params.time || 'Full Day';
+      const reason = params.reason || '';
       
       // Ensure slot is still free
       const data = sheet.getDataRange().getValues();
@@ -230,7 +266,70 @@ function doPost(e) {
         const rowStatus = data[i][COLUMNS.STATUS - 1];
         
         if (rowDate === date && rowTime === time && rowStatus !== 'Cancelled') {
-          throw new Error('This time slot is already booked.');
+          throw new Error('This slot/day is already blocked or booked.');
+        }
+      }
+      
+      sheet.appendRow([new Date(), date, time, 'Doctor Off', 'N/A', 'Doctor Off-Duty', reason, 'Confirmed', 'Staff']);
+      return createJsonResponse({ status: 'success' });
+    }
+    
+    // 2. cancelDoctorOff Action
+    if (action === 'cancelDoctorOff') {
+      if (!verifyPassword(password)) throw new Error('Unauthorized.');
+      const time = params.time || 'Full Day';
+      
+      const data = sheet.getDataRange().getValues();
+      let updated = false;
+      
+      for (let i = 1; i < data.length; i++) {
+        const rowDate = formatDate(data[i][COLUMNS.DATE - 1]);
+        const rowTime = formatTime(data[i][COLUMNS.TIME - 1]);
+        const rowName = data[i][COLUMNS.NAME - 1];
+        const rowService = data[i][COLUMNS.SERVICE - 1];
+        const rowStatus = data[i][COLUMNS.STATUS - 1];
+        
+        if (rowDate === date && rowTime === time && rowName === 'Doctor Off' && rowService === 'Doctor Off-Duty' && rowStatus !== 'Cancelled') {
+          sheet.getRange(i + 1, COLUMNS.STATUS).setValue('Cancelled');
+          updated = true;
+          break;
+        }
+      }
+      
+      if (!updated) throw new Error('No active off-duty block found.');
+      return createJsonResponse({ status: 'success' });
+    }
+    
+    // 3. Booking
+    if (action === 'book' || action === 'staffBook') {
+      const time = params.time;
+      const name = params.name;
+      const phone = params.phone;
+      const service = params.service || 'Doctor Consultancy';
+      const details = params.details || '';
+      
+      let bookedBy = 'Patient';
+      
+      if (action === 'staffBook') {
+        if (!verifyPassword(password)) throw new Error('Unauthorized.');
+        bookedBy = 'Staff';
+      }
+      
+      // Ensure slot is still free, and no Full Day off block is active
+      const data = sheet.getDataRange().getValues();
+      for (let i = 1; i < data.length; i++) {
+        const rowDate = formatDate(data[i][COLUMNS.DATE - 1]);
+        const rowTime = formatTime(data[i][COLUMNS.TIME - 1]);
+        const rowStatus = data[i][COLUMNS.STATUS - 1];
+        const rowName = data[i][COLUMNS.NAME - 1];
+        
+        if (rowDate === date && rowStatus !== 'Cancelled') {
+          if (rowTime === 'Full Day' && rowName === 'Doctor Off') {
+            throw new Error('Doctor is off-duty for the full day.');
+          }
+          if (rowTime === time) {
+            throw new Error('This time slot is already booked or blocked.');
+          }
         }
       }
       
@@ -238,7 +337,7 @@ function doPost(e) {
       return createJsonResponse({ status: 'success' });
     }
     
-    // Cancellation
+    // 4. Cancellation
     if (action === 'cancel' || action === 'staffCancel') {
       const phone = String(params.phone).trim();
       const time = params.time;
