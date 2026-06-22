@@ -593,6 +593,10 @@ body {
   border-left: 5px solid #3498db;
 }
 
+.staff-slot-card.blocked {
+  border-left: 5px solid #e67e22;
+}
+
 .staff-slot-header {
   display: flex;
   justify-content: space-between;
@@ -629,6 +633,11 @@ body {
   color: #2980b9;
 }
 
+.staff-slot-badge.blocked {
+  background: rgba(230, 126, 34, 0.1);
+  color: #d35400;
+}
+
 .staff-patient-info {
   width: 100%;
   text-align: left;
@@ -659,6 +668,15 @@ body {
 
 .btn-staff-action.book:hover {
   background: #27ae60;
+}
+
+.btn-staff-action.block {
+  background: #e67e22;
+  color: var(--white);
+}
+
+.btn-staff-action.block:hover {
+  background: #d35400;
 }
 
 .btn-staff-action.cancel {

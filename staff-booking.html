@@ -53,7 +53,7 @@
         </div>
 
         <!-- DATE SELECTOR -->
-        <div class="booking-widget" style="margin: 0 0 30px 0; max-width:100%;">
+        <div class="booking-widget" style="margin: 0 0 20px 0; max-width:100%;">
           <div style="display:flex; align-items:center; justify-content:center; gap:15px; flex-wrap:wrap;">
             <label style="font-weight:600; font-size:18px;">📅 Working Date:</label>
             <input type="date" id="dashboardDate" style="
@@ -62,7 +62,15 @@
               border-radius:6px;
               border:1px solid #ccc;
               width: 200px;
-            " onchange="loadStaffSchedule()">
+            " onchange="validateDateAndLoadStaffSchedule()">
+          </div>
+        </div>
+
+        <!-- DOCTOR SCHEDULE STATUS PANEL -->
+        <div id="doctorSchedulePanel" class="booking-widget" style="margin: 0 0 30px 0; max-width:100%; display:none; justify-content:center; align-items:center; padding:15px; border-radius:10px;">
+          <div id="doctorScheduleContent" style="display:flex; justify-content:space-between; align-items:center; width:100%; flex-wrap:wrap; gap:10px;">
+            <span id="doctorScheduleStatusText" style="font-weight:600; font-size:16px;"></span>
+            <button id="btnToggleDoctorOff" class="btn-submit" style="margin:0; padding:10px 20px; width:auto; border-radius:8px; font-weight:600; cursor:pointer; font-size:14px;"></button>
           </div>
         </div>
 
@@ -99,14 +107,7 @@
           <input type="tel" id="staffBookPhone" placeholder="Contact Phone Number *" required>
         </div>
 
-        <div class="form-row" style="grid-template-columns: 1fr; margin-bottom:15px;">
-          <select id="staffBookService" required>
-            <option value="" disabled selected>Select Service Required *</option>
-            <option value="Doctor Consultancy">👨‍⚕️ Doctor Consultancy</option>
-            <option value="Lab Test">🧪 Laboratory Test</option>
-            <option value="Pharmacy">💊 Pharmacy Medicines</option>
-          </select>
-        </div>
+        <!-- Service is hardcoded as Doctor Consultancy -->
 
         <div class="form-row" style="grid-template-columns: 1fr; margin-bottom:15px;">
           <textarea id="staffBookDetails" placeholder="Front office notes, symptoms, or special instructions..."></textarea>
@@ -158,9 +159,15 @@
         window.history.replaceState({}, document.title, window.location.pathname);
       }
 
-      // Initialize date selector to today
+      // Initialize date selector to today, or tomorrow if today is Sunday
       const today = new Date().toISOString().split('T')[0];
-      document.getElementById('dashboardDate').value = today;
+      let defaultDate = today;
+      if (isSunday(defaultDate)) {
+        const nextDay = new Date();
+        nextDay.setDate(nextDay.getDate() + 1);
+        defaultDate = nextDay.toISOString().split('T')[0];
+      }
+      document.getElementById('dashboardDate').value = defaultDate;
 
       if (cachedPassword) {
         validateSavedSession();
@@ -168,6 +175,44 @@
         showAuth();
       }
     });
+
+    // Helper functions for Sunday Check
+    function isSunday(dateStr) {
+      if (!dateStr) return false;
+      const parts = dateStr.split('-');
+      const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      return d.getDay() === 0;
+    }
+
+    function handleDateChange(inputEl) {
+      const val = inputEl.value;
+      if (!val) return false;
+      if (isSunday(val)) {
+        alert("Maliyil Medical Centre is closed on Sundays. Please select Monday through Saturday.");
+        inputEl.value = '';
+        return true;
+      }
+      return false;
+    }
+
+    function renderSundayHoliday() {
+      const grid = document.getElementById('staffSlotsGrid');
+      grid.innerHTML = `
+        <div style="grid-column: span 3; text-align:center; padding:40px; font-weight:600; font-size:18px; color:#c0392b; background:#fadbd8; border-radius:8px; width: 100%;">
+          📅 Sundays are clinic holidays. No appointments can be scheduled.
+        </div>
+      `;
+      document.getElementById('doctorSchedulePanel').style.display = 'none';
+    }
+
+    function validateDateAndLoadStaffSchedule() {
+      const dateInput = document.getElementById('dashboardDate');
+      if (handleDateChange(dateInput)) {
+        renderSundayHoliday();
+        return;
+      }
+      loadStaffSchedule();
+    }
 
     // ============================================================
     // AUTHENTICATION LOGIC
@@ -180,7 +225,7 @@
     function showDashboard() {
       document.getElementById('authContainer').style.display = 'none';
       document.getElementById('dashboardContainer').style.display = 'block';
-      loadStaffSchedule();
+      validateDateAndLoadStaffSchedule();
     }
 
     function handleLogin(event) {
@@ -206,12 +251,8 @@
         body: JSON.stringify(payload)
       })
       .then(() => {
-        // Apps Script returns no-cors response. We attempt to load the schedule.
-        // If password is wrong, the loadStaffSchedule call will fail/return unauthorized.
         cachedPassword = passwordInput;
         localStorage.setItem('staff_password', passwordInput);
-        
-        // Quick verification check: test-load
         verifySessionOnServer(passwordInput);
       })
       .catch(err => {
@@ -265,6 +306,11 @@
       const selectedDate = document.getElementById('dashboardDate').value;
       if (!selectedDate) return;
 
+      if (isSunday(selectedDate)) {
+        renderSundayHoliday();
+        return;
+      }
+
       const grid = document.getElementById('staffSlotsGrid');
       const loader = document.getElementById('dashboardLoader');
 
@@ -276,8 +322,16 @@
         .then(response => response.json())
         .then(res => {
           if (res.status === 'success') {
-            const bookings = res.data || []; // list of objects { time, name, phone, service, details, bookedBy }
-            renderGrid(bookings);
+            if (res.isSunday) {
+              renderSundayHoliday();
+              return;
+            }
+            
+            // Render Doctor Schedule Status Panel
+            updateDoctorSchedulePanel(res);
+            
+            const bookings = res.data || [];
+            renderGrid(bookings, res.doctorOff, res.reason);
           } else {
             alert("Session expired. Please log in again.");
             handleLogout();
@@ -294,7 +348,82 @@
         });
     }
 
-    function renderGrid(bookings) {
+    // Update Doctor Off-duty Panel UI
+    function updateDoctorSchedulePanel(res) {
+      const panel = document.getElementById('doctorSchedulePanel');
+      const text = document.getElementById('doctorScheduleStatusText');
+      const button = document.getElementById('btnToggleDoctorOff');
+      const selectedDate = document.getElementById('dashboardDate').value;
+      
+      if (isSunday(selectedDate)) {
+        panel.style.display = 'none';
+        return;
+      }
+      
+      panel.style.display = 'flex';
+      
+      if (res.doctorOff) {
+        panel.style.background = '#fadbd8';
+        panel.style.borderColor = '#f1948a';
+        text.innerHTML = `🏥 <strong>Doctor Schedule Status:</strong> Off-Duty today<br><span style="font-size:14px; color:#c0392b; font-weight:normal;">Reason: ${res.reason || 'Not specified'}</span>`;
+        button.textContent = '✅ Mark Doctor Available';
+        button.style.background = '#2ecc71';
+        button.style.color = 'white';
+        button.style.borderColor = '#2ecc71';
+        button.onclick = () => setDoctorFullDayOff(false);
+      } else {
+        panel.style.background = '#ebf5fb';
+        panel.style.borderColor = '#a9cce3';
+        text.innerHTML = `⚡ <strong>Doctor Schedule Status:</strong> Active & Available today`;
+        button.textContent = '🚫 Mark Doctor Off for Full Day';
+        button.style.background = '#e67e22';
+        button.style.color = 'white';
+        button.style.borderColor = '#e67e22';
+        button.onclick = () => setDoctorFullDayOff(true);
+      }
+    }
+
+    function setDoctorFullDayOff(shouldBeOff) {
+      const date = document.getElementById('dashboardDate').value;
+      if (!date) return;
+      
+      let reason = '';
+      if (shouldBeOff) {
+        reason = prompt("Enter reason for doctor being off-duty (optional):");
+        if (reason === null) return; // User cancelled prompt
+      } else {
+        if (!confirm("Are you sure you want to mark the doctor as available for this day?")) return;
+      }
+      
+      const loader = document.getElementById('dashboardLoader');
+      loader.style.display = 'flex';
+      
+      const payload = {
+        action: shouldBeOff ? 'setDoctorOff' : 'cancelDoctorOff',
+        password: cachedPassword,
+        date: date,
+        time: 'Full Day',
+        reason: reason
+      };
+      
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(() => {
+        alert(shouldBeOff ? "Doctor marked as Off-Duty for this day." : "Doctor marked as Available.");
+        loadStaffSchedule(); // refresh
+      })
+      .catch(err => {
+        alert("An error occurred. Please try again.");
+        console.error(err);
+        loader.style.display = 'none';
+      });
+    }
+
+    function renderGrid(bookings, doctorOff, doctorOffReason) {
       const grid = document.getElementById('staffSlotsGrid');
       grid.innerHTML = ''; // clear grid
 
@@ -305,7 +434,21 @@
         const card = document.createElement('div');
         card.className = 'staff-slot-card';
 
-        if (!booking) {
+        if (doctorOff) {
+          // Entire day is blocked
+          card.classList.add('blocked');
+          card.innerHTML = `
+            <div class="staff-slot-header">
+              <span class="staff-slot-time">${time}</span>
+              <span class="staff-slot-badge blocked">Off-Duty</span>
+            </div>
+            <div class="staff-patient-info" style="text-align:center; padding:15px 0;">
+              <span style="color:#d35400; font-weight:600;"><i class="fa-solid fa-ban"></i> Doctor Off-Duty</span>
+              <br><span style="font-size:12px; color:var(--text-muted);">${doctorOffReason || 'Full Day Block'}</span>
+            </div>
+            <button class="btn-staff-action cancel" style="opacity:0.5; cursor:not-allowed;" disabled>Blocked</button>
+          `;
+        } else if (!booking) {
           // Free Slot Layout
           card.classList.add('free');
           card.innerHTML = `
@@ -313,10 +456,27 @@
               <span class="staff-slot-time">${time}</span>
               <span class="staff-slot-badge free">Free</span>
             </div>
-            <div class="staff-patient-info" style="text-align:center; padding:15px 0;">
+            <div class="staff-patient-info" style="text-align:center; padding:10px 0;">
               <span style="color:#2ecc71; font-weight:600;"><i class="fa-solid fa-circle-check"></i> Available</span>
             </div>
-            <button class="btn-staff-action book" onclick="openStaffBookingModal('${time}')">Book Slot</button>
+            <div style="width:100%; display:flex; gap:8px;">
+              <button class="btn-staff-action book" style="margin-top:5px; flex:1;" onclick="openStaffBookingModal('${time}')">Book</button>
+              <button class="btn-staff-action block" style="margin-top:5px; flex:1;" onclick="blockSingleSlot('${time}')">Block</button>
+            </div>
+          `;
+        } else if (booking.name === 'Doctor Off' && booking.service === 'Doctor Off-Duty') {
+          // Blocked Slot Layout
+          card.classList.add('blocked');
+          card.innerHTML = `
+            <div class="staff-slot-header">
+              <span class="staff-slot-time">${time}</span>
+              <span class="staff-slot-badge blocked">Blocked</span>
+            </div>
+            <div class="staff-patient-info" style="padding:10px 0;">
+              <strong style="color:#d35400;"><i class="fa-solid fa-ban"></i> Doctor Unavailable</strong><br>
+              <span style="font-size:13px; color:var(--text-muted);">Reason: ${booking.details || 'Blocked slot'}</span>
+            </div>
+            <button class="btn-staff-action cancel" onclick="unblockSingleSlot('${time}')">Unblock Slot</button>
           `;
         } else {
           // Booked Slot Layout
@@ -341,6 +501,86 @@
         }
 
         grid.appendChild(card);
+      });
+    }
+
+    // Block a single slot for Doctor Off
+    function blockSingleSlot(time) {
+      const date = document.getElementById('dashboardDate').value;
+      if (!date) return;
+      
+      const reason = prompt(`Enter reason for blocking the ${time} slot (optional):`);
+      if (reason === null) return; // cancelled prompt
+      
+      const grid = document.getElementById('staffSlotsGrid');
+      const loader = document.getElementById('dashboardLoader');
+      grid.style.opacity = '0.3';
+      grid.style.pointerEvents = 'none';
+      loader.style.display = 'flex';
+      
+      const payload = {
+        action: 'setDoctorOff',
+        password: cachedPassword,
+        date: date,
+        time: time,
+        reason: reason || 'Doctor Off-Duty'
+      };
+      
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(() => {
+        alert(`Slot ${time} blocked successfully.`);
+        loadStaffSchedule(); // refresh
+      })
+      .catch(err => {
+        alert("Error blocking slot.");
+        console.error(err);
+        grid.style.opacity = '1';
+        grid.style.pointerEvents = 'auto';
+        loader.style.display = 'none';
+      });
+    }
+
+    // Unblock a single slot for Doctor Off
+    function unblockSingleSlot(time) {
+      const date = document.getElementById('dashboardDate').value;
+      if (!date) return;
+      
+      if (!confirm(`Are you sure you want to unblock the ${time} slot?`)) return;
+      
+      const grid = document.getElementById('staffSlotsGrid');
+      const loader = document.getElementById('dashboardLoader');
+      grid.style.opacity = '0.3';
+      grid.style.pointerEvents = 'none';
+      loader.style.display = 'flex';
+      
+      const payload = {
+        action: 'cancelDoctorOff',
+        password: cachedPassword,
+        date: date,
+        time: time
+      };
+      
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(() => {
+        alert(`Slot ${time} unblocked successfully.`);
+        loadStaffSchedule(); // refresh
+      })
+      .catch(err => {
+        alert("Error unblocking slot.");
+        console.error(err);
+        grid.style.opacity = '1';
+        grid.style.pointerEvents = 'auto';
+        loader.style.display = 'none';
       });
     }
 
@@ -370,7 +610,7 @@
       const time = document.getElementById('staffModalTime').value;
       const name = document.getElementById('staffBookName').value;
       const phone = document.getElementById('staffBookPhone').value;
-      const service = document.getElementById('staffBookService').value;
+      const service = 'Doctor Consultancy'; // Hardcoded doctor consultancy service
       const details = document.getElementById('staffBookDetails').value;
 
       const loader = document.getElementById('staffBookLoader');
@@ -404,7 +644,6 @@
         // Reset form fields
         document.getElementById('staffBookName').value = '';
         document.getElementById('staffBookPhone').value = '';
-        document.getElementById('staffBookService').selectedIndex = 0;
         document.getElementById('staffBookDetails').value = '';
       })
       .catch(err => {

@@ -51,8 +51,7 @@
         <h2 class="section-title" style="margin-top: 10px;">Doctor Evening Appointment</h2>
 
         <p style="text-align:center; margin-bottom:30px;">
-          Doctor Available: 5:00 PM – 8:30 PM<br>
-          Each Patient: 10 Minutes
+          Doctor Available: 5:00 PM – 8:30 PM
         </p>
 
         <div style="text-align:center; margin-bottom:25px;">
@@ -65,8 +64,10 @@
             font-size:16px;
             border-radius:6px;
             border:1px solid #ccc;
-          " onchange="loadBookedSlots()">
+          " onchange="validateDateAndLoadSlots()">
         </div>
+
+        <div id="clinicStatusMessage" style="display:none; text-align:center; padding:20px; font-weight:600; font-size:18px; border-radius:8px; margin: 20px auto; max-width: 500px;"></div>
 
         <div id="slotsLoader" class="spinner-container" style="display:none;">
           <div class="spinner"></div>
@@ -100,49 +101,6 @@
       </div>
     </section>
 
-    <!-- ADVANCED BOOKING SECTION -->
-    <section class="services">
-      <div class="container">
-        <h2 class="section-title">Advanced Booking</h2>
-
-        <div class="booking-widget">
-          <form class="contact-form" onsubmit="submitAdvancedBooking(event)">
-            <div class="form-row">
-              <select id="bookService" required>
-                <option value="" disabled selected>Select Service Required *</option>
-                <option value="Doctor Consultancy">👨‍⚕️ Doctor Consultancy</option>
-                <option value="Lab Test">🧪 Laboratory Test</option>
-                <option value="Pharmacy">💊 Pharmacy Medicines</option>
-              </select>
-              <input type="text" id="bookName" placeholder="Patient Full Name *" required>
-            </div>
-
-            <div class="form-row">
-              <input type="tel" id="bookPhone" placeholder="WhatsApp Number *" required>
-              <input type="date" id="bookDate" required>
-            </div>
-
-            <div class="form-row">
-              <select id="bookTime" required style="grid-column: span 2;">
-                <option value="" disabled selected>Select Slot *</option>
-                <option value="Morning (08:30 AM - 01:00 PM)">Morning Slot (08:30 AM - 01:00 PM)</option>
-                <option value="Evening (05:00 PM - 08:30 PM)">Evening Slot (05:00 PM - 08:30 PM)</option>
-              </select>
-            </div>
-
-            <textarea id="bookMessage"
-              placeholder="Any specific symptoms, required lab tests, or medicine list..."></textarea>
-            
-            <div id="advLoading" style="display:none; text-align:center; margin-bottom:15px;">
-              <div class="spinner" style="margin:auto;"></div>
-              <p style="margin-top:10px; font-size:14px; color:var(--text-muted);">Saving booking details...</p>
-            </div>
-            
-            <button type="submit" id="btnAdvSubmit" class="btn-submit">Confirm Booking Request</button>
-          </form>
-        </div>
-      </div>
-    </section>
   </div>
 
   <!-- CANCELLATION TAB CONTENT -->
@@ -154,7 +112,7 @@
           <form class="contact-form" onsubmit="submitPatientCancellation(event)">
             <div class="form-row" style="grid-template-columns: 1fr; margin-bottom:15px;">
               <label style="font-weight:600;">📅 Appointment Date</label>
-              <input type="date" id="cancelDate" required>
+              <input type="date" id="cancelDate" required onchange="handleDateChange(this)">
             </div>
             
             <div class="form-row" style="grid-template-columns: 1fr; margin-bottom:15px;">
@@ -221,14 +179,7 @@
           <input type="tel" id="modalPhone" placeholder="WhatsApp Number *" required>
         </div>
         
-        <div class="form-row" style="grid-template-columns: 1fr; margin-bottom: 15px;">
-          <select id="modalService" required>
-            <option value="" disabled selected>Select Service Required *</option>
-            <option value="Doctor Consultancy">👨‍⚕️ Doctor Consultancy</option>
-            <option value="Lab Test">🧪 Laboratory Test</option>
-            <option value="Pharmacy">💊 Pharmacy Medicines</option>
-          </select>
-        </div>
+        <!-- Service is hardcoded as Doctor Consultancy -->
         
         <div class="form-row" style="grid-template-columns: 1fr; margin-bottom: 15px;">
           <textarea id="modalDetails" placeholder="Specific symptoms or details (optional)"></textarea>
@@ -309,15 +260,69 @@
       });
     }
 
+    // Helper functions for Sunday Check
+    function isSunday(dateStr) {
+      if (!dateStr) return false;
+      const parts = dateStr.split('-');
+      const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      return d.getDay() === 0;
+    }
+
+    function handleDateChange(inputEl) {
+      const val = inputEl.value;
+      if (!val) return false;
+      if (isSunday(val)) {
+        alert("Maliyil Medical Centre is closed on Sundays. Please select Monday through Saturday.");
+        inputEl.value = '';
+        return true;
+      }
+      return false;
+    }
+
+    function showClinicStatusBanner(message, isWarning = true) {
+      const banner = document.getElementById('clinicStatusMessage');
+      banner.textContent = message;
+      banner.style.display = 'block';
+      banner.style.color = isWarning ? '#c0392b' : '#2980b9';
+      banner.style.background = isWarning ? '#fadbd8' : '#ebf5fb';
+      banner.style.borderColor = isWarning ? '#f1948a' : '#a9cce3';
+      banner.style.borderStyle = 'solid';
+      banner.style.borderWidth = '1px';
+      banner.style.padding = '15px';
+      banner.style.marginBottom = '25px';
+      document.getElementById('slotsGrid').style.display = 'none';
+    }
+
+    function hideClinicStatusBanner() {
+      document.getElementById('clinicStatusMessage').style.display = 'none';
+      document.getElementById('slotsGrid').style.display = 'grid';
+    }
+
     // Set minimum date to today for date pickers
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('appointmentDate').min = today;
-    document.getElementById('bookDate').min = today;
     document.getElementById('cancelDate').min = today;
 
-    // Set default date to today
-    document.getElementById('appointmentDate').value = today;
-    loadBookedSlots();
+    // Set default date to today, or tomorrow if today is Sunday
+    let defaultDate = today;
+    if (isSunday(defaultDate)) {
+      const nextDay = new Date();
+      nextDay.setDate(nextDay.getDate() + 1);
+      defaultDate = nextDay.toISOString().split('T')[0];
+    }
+    document.getElementById('appointmentDate').value = defaultDate;
+    
+    // Call date validation helper to init slots
+    validateDateAndLoadSlots();
+
+    function validateDateAndLoadSlots() {
+      const dateInput = document.getElementById('appointmentDate');
+      if (handleDateChange(dateInput)) {
+        showClinicStatusBanner("📅 The clinic is closed on Sundays.");
+        return;
+      }
+      loadBookedSlots();
+    }
 
     // ============================================================
     // TAB NAVIGATION
@@ -341,6 +346,11 @@
       const selectedDate = document.getElementById('appointmentDate').value;
       if (!selectedDate) return;
 
+      if (isSunday(selectedDate)) {
+        showClinicStatusBanner("📅 The clinic is closed on Sundays.");
+        return;
+      }
+
       const grid = document.getElementById('slotsGrid');
       const loader = document.getElementById('slotsLoader');
 
@@ -352,6 +362,16 @@
         .then(response => response.json())
         .then(res => {
           if (res.status === 'success') {
+            if (res.isSunday) {
+              showClinicStatusBanner("📅 The clinic is closed on Sundays.");
+              return;
+            }
+            if (res.doctorOff) {
+              showClinicStatusBanner(`🏥 Doctor is Off-Duty today: ${res.reason || 'No appointments available.'}`);
+              return;
+            }
+
+            hideClinicStatusBanner();
             const bookedSlots = res.data || [];
             
             // Loop through all buttons in slotsGrid
@@ -406,7 +426,7 @@
       const time = document.getElementById('modalTime').value;
       const name = document.getElementById('modalName').value;
       const phone = document.getElementById('modalPhone').value;
-      const service = document.getElementById('modalService').value;
+      const service = 'Doctor Consultancy'; // Hardcoded doctor consultancy service
       const details = document.getElementById('modalDetails').value;
 
       const loader = document.getElementById('modalLoading');
@@ -440,80 +460,15 @@
         // Clear modal form
         document.getElementById('modalName').value = '';
         document.getElementById('modalPhone').value = '';
-        document.getElementById('modalService').selectedIndex = 0;
         document.getElementById('modalDetails').value = '';
 
         // Redirect to WhatsApp
         const msg = `*Maliyil Medical Centre - Evening Appointment*%0A%0A` +
           `*Patient:* ${name}%0A` +
-          `*Service:* ${service}%0A` +
           `*WhatsApp:* ${phone}%0A` +
           `*Date:* ${date}%0A` +
           `*Slot:* ${time}%0A` +
           `*Details:* ${details}`;
-        window.open(`https://wa.me/918943904357?text=${msg}`, '_blank');
-      })
-      .catch(err => {
-        alert("An error occurred. Please try again.");
-        console.error(err);
-      })
-      .finally(() => {
-        loader.style.display = 'none';
-        submitBtn.style.display = 'block';
-      });
-    }
-
-    // Submission from Advanced Booking Form (Bottom Form)
-    function submitAdvancedBooking(event) {
-      event.preventDefault();
-      
-      const service = document.getElementById('bookService').value;
-      const name = document.getElementById('bookName').value;
-      const phone = document.getElementById('bookPhone').value;
-      const date = document.getElementById('bookDate').value;
-      const slot = document.getElementById('bookTime').value;
-      const note = document.getElementById('bookMessage').value;
-
-      const loader = document.getElementById('advLoading');
-      const submitBtn = document.getElementById('btnAdvSubmit');
-
-      loader.style.display = 'block';
-      submitBtn.style.display = 'none';
-
-      const payload = {
-        action: 'book',
-        date: date,
-        time: slot,
-        name: name,
-        phone: phone,
-        service: service,
-        details: note
-      };
-
-      fetch(SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-      .then(() => {
-        alert("Booking details logged. Redirecting to WhatsApp to send message.");
-        
-        // Clear advanced booking form
-        document.getElementById('bookName').value = '';
-        document.getElementById('bookPhone').value = '';
-        document.getElementById('bookService').selectedIndex = 0;
-        document.getElementById('bookTime').selectedIndex = 0;
-        document.getElementById('bookMessage').value = '';
-
-        // Redirect to WhatsApp
-        const msg = `*Maliyil Medical Centre - Advanced Booking*%0A%0A` +
-          `*Patient:* ${name}%0A` +
-          `*Service:* ${service}%0A` +
-          `*WhatsApp:* ${phone}%0A` +
-          `*Date:* ${date}%0A` +
-          `*Slot:* ${slot}%0A` +
-          `*Details:* ${note}`;
         window.open(`https://wa.me/918943904357?text=${msg}`, '_blank');
       })
       .catch(err => {
