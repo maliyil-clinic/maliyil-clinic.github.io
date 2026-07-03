@@ -47,7 +47,8 @@
             <h2 style="color:var(--primary-blue); margin:0;">Daily Schedule Manager</h2>
             <p style="color:var(--text-muted); margin:0;">View and book phone-in appointments in real-time</p>
           </div>
-          <div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button onclick="openPrintableSchedule()" class="tab-btn" style="background:var(--primary-blue); color:white; border-color:var(--primary-blue);">📋 Printable Schedule</button>
             <button onclick="handleLogout()" class="tab-btn" style="background:#e74c3c; color:white; border-color:#e74c3c;">Logout</button>
           </div>
         </div>
@@ -697,6 +698,14 @@
         grid.style.pointerEvents = 'auto';
         loader.style.display = 'none';
       });
+    }
+
+    // ============================================================
+    // PRINTABLE SCHEDULE LINK
+    // ============================================================
+    function openPrintableSchedule() {
+      const date = document.getElementById('dashboardDate').value;
+      window.open(`staff-schedule.html?date=${date}&password=${encodeURIComponent(cachedPassword)}`, '_blank');
     }
   </script>
 </body>
