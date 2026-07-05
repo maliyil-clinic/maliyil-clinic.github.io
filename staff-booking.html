@@ -496,6 +496,11 @@
               <strong>📞 Phone:</strong> <a href="tel:${booking.phone}">${booking.phone}</a><br>
               <strong>🩹 Service:</strong> ${booking.service}<br>
               ${booking.details ? `<strong>📝 Notes:</strong> ${booking.details}` : ''}
+              ${booking.details && booking.details.toLowerCase().includes('callin') ? `
+                <div style="margin-top: 8px;">
+                  <audio src="images/callin.mp3" controls style="height: 30px; width: 100%; border-radius: 4px; outline: none;"></audio>
+                </div>
+              ` : ''}
             </div>
             <button class="btn-staff-action cancel" onclick="cancelSlot('${time}', '${booking.phone}')">Cancel Slot</button>
           `;
