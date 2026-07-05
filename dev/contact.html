@@ -99,49 +99,7 @@
       </div>
     </section>
 
-    <!-- ADVANCED BOOKING SECTION -->
-    <section class="services">
-      <div class="container">
-        <h2 class="section-title">Advanced Booking</h2>
 
-        <div class="booking-widget">
-          <form class="contact-form" onsubmit="submitAdvancedBooking(event)">
-            <div class="form-row">
-              <select id="bookService" required>
-                <option value="" disabled selected>Select Service Required *</option>
-                <option value="Doctor Consultancy">👨‍⚕️ Doctor Consultancy</option>
-                <option value="Lab Test">🧪 Laboratory Test</option>
-                <option value="Pharmacy">💊 Pharmacy Medicines</option>
-              </select>
-              <input type="text" id="bookName" placeholder="Patient Full Name *" required>
-            </div>
-
-            <div class="form-row">
-              <input type="tel" id="bookPhone" placeholder="WhatsApp Number *" required>
-              <input type="date" id="bookDate" required>
-            </div>
-
-            <div class="form-row">
-              <select id="bookTime" required style="grid-column: span 2;">
-                <option value="" disabled selected>Select Slot *</option>
-                <option value="Morning (08:30 AM - 01:00 PM)">Morning Slot (08:30 AM - 01:00 PM)</option>
-                <option value="Evening (05:00 PM - 08:30 PM)">Evening Slot (05:00 PM - 08:30 PM)</option>
-              </select>
-            </div>
-
-            <textarea id="bookMessage"
-              placeholder="Any specific symptoms, required lab tests, or medicine list..."></textarea>
-            
-            <div id="advLoading" style="display:none; text-align:center; margin-bottom:15px;">
-              <div class="spinner" style="margin:auto;"></div>
-              <p style="margin-top:10px; font-size:14px; color:var(--text-muted);">Saving booking details...</p>
-            </div>
-            
-            <button type="submit" id="btnAdvSubmit" class="btn-submit">Confirm Booking Request</button>
-          </form>
-        </div>
-      </div>
-    </section>
   </div>
 
   <!-- CANCELLATION TAB CONTENT -->
@@ -462,68 +420,7 @@
       });
     }
 
-    // Submission from Advanced Booking Form (Bottom Form)
-    function submitAdvancedBooking(event) {
-      event.preventDefault();
-      
-      const service = document.getElementById('bookService').value;
-      const name = document.getElementById('bookName').value;
-      const phone = document.getElementById('bookPhone').value;
-      const date = document.getElementById('bookDate').value;
-      const slot = document.getElementById('bookTime').value;
-      const note = document.getElementById('bookMessage').value;
 
-      const loader = document.getElementById('advLoading');
-      const submitBtn = document.getElementById('btnAdvSubmit');
-
-      loader.style.display = 'block';
-      submitBtn.style.display = 'none';
-
-      const payload = {
-        action: 'book',
-        date: date,
-        time: slot,
-        name: name,
-        phone: phone,
-        service: service,
-        details: note
-      };
-
-      fetch(SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-      .then(() => {
-        alert("Booking details logged. Redirecting to WhatsApp to send message.");
-        
-        // Clear advanced booking form
-        document.getElementById('bookName').value = '';
-        document.getElementById('bookPhone').value = '';
-        document.getElementById('bookService').selectedIndex = 0;
-        document.getElementById('bookTime').selectedIndex = 0;
-        document.getElementById('bookMessage').value = '';
-
-        // Redirect to WhatsApp
-        const msg = `*Maliyil Medical Centre - Advanced Booking*%0A%0A` +
-          `*Patient:* ${name}%0A` +
-          `*Service:* ${service}%0A` +
-          `*WhatsApp:* ${phone}%0A` +
-          `*Date:* ${date}%0A` +
-          `*Slot:* ${slot}%0A` +
-          `*Details:* ${note}`;
-        window.open(`https://wa.me/919447039929?text=${msg}`, '_blank');
-      })
-      .catch(err => {
-        alert("An error occurred. Please try again.");
-        console.error(err);
-      })
-      .finally(() => {
-        loader.style.display = 'none';
-        submitBtn.style.display = 'block';
-      });
-    }
 
     // ============================================================
     // CLIENT CANCELLATION FLOW
