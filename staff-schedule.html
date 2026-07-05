@@ -974,7 +974,14 @@
             <td class="patient-name">${escapeHtml(booking.name)}</td>
             <td class="patient-phone"><a href="tel:${escapeHtml(booking.phone)}">${escapeHtml(booking.phone)}</a></td>
             <td>${escapeHtml(booking.service)}</td>
-            <td class="patient-notes">${escapeHtml(booking.details) || '—'}</td>
+            <td class="patient-notes">
+              ${escapeHtml(booking.details) || '—'}
+              ${booking.details && booking.details.toLowerCase().includes('callin') ? `
+                <div style="margin-top: 5px;">
+                  <audio src="images/callin.mp3" controls style="height: 25px; width: 100%; max-width: 200px; outline: none;"></audio>
+                </div>
+              ` : ''}
+            </td>
           `;
         }
 
