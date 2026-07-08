@@ -53,7 +53,7 @@ document.addEventListener("DOMContentLoaded", function () {
           "Please confirm my appointment.";
 
         // Set the link dynamically before it redirects
-        this.href = "https://wa.me/919447039929?text=" + message;
+        this.href = "https://wa.me/918943904357?text=" + message;
       });
     });
   }
@@ -73,7 +73,7 @@ function sendToWhatsApp(event) {
   const time = document.getElementById('bookTime') ? document.getElementById('bookTime').value : 'Not Specified';
   const message = document.getElementById('bookMessage') ? document.getElementById('bookMessage').value : '';
 
-  const clinicNumber = "919447039929"; // Maliyil Medical Centre Number
+  const clinicNumber = "918943904357"; // Maliyil Medical Centre Number
 
   // Formatting the WhatsApp Message
   let whatsappMessage = `*New Appointment Request*%0A%0A`;
