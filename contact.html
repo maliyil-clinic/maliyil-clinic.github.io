@@ -192,6 +192,13 @@
           <textarea id="modalDetails" placeholder="Specific symptoms or details (optional)"></textarea>
         </div>
         
+        <div class="form-row" style="grid-template-columns: 1fr; margin-bottom: 15px;">
+          <label style="display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 14px; color: var(--text-main); cursor: pointer; user-select: none;">
+            <input type="checkbox" id="modalVoiceBooking" style="width: 18px; height: 18px; cursor: pointer; margin: 0;">
+            <span>🎤 Include patient's voice booking note (callin)</span>
+          </label>
+        </div>
+        
         <div id="modalLoading" style="display:none; text-align:center; margin-bottom: 15px;">
           <div class="spinner" style="margin:auto;"></div>
           <p style="margin-top:10px; font-size:14px; color:var(--text-muted);">Securing your slot...</p>
@@ -277,6 +284,12 @@
     document.getElementById('appointmentDate').value = today;
     loadBookedSlots();
 
+    // Auto-populate cancellation phone if exists
+    const savedPhone = localStorage.getItem('patient_phone');
+    if (savedPhone) {
+      document.getElementById('cancelPhone').value = savedPhone;
+    }
+
     // ============================================================
     // TAB NAVIGATION
     // ============================================================
@@ -349,6 +362,15 @@
       const formattedDate = new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
       document.getElementById('modalSelectedDetails').textContent = `📅 ${formattedDate} at ⏰ ${time}`;
       
+      // Auto-populate booking phone if exists
+      const savedPhone = localStorage.getItem('patient_phone');
+      if (savedPhone) {
+        document.getElementById('modalPhone').value = savedPhone;
+      }
+      // Reset voice booking checkbox
+      const voiceCheck = document.getElementById('modalVoiceBooking');
+      if (voiceCheck) voiceCheck.checked = false;
+
       document.getElementById('bookingModal').classList.add('active');
     }
 
@@ -366,12 +388,24 @@
       const phone = document.getElementById('modalPhone').value;
       const service = document.getElementById('modalService').value;
       const details = document.getElementById('modalDetails').value;
+      const voiceBookingChecked = document.getElementById('modalVoiceBooking').checked;
+
+      // Save phone number automatically
+      localStorage.setItem('patient_phone', phone);
+      const cancelPhoneEl = document.getElementById('cancelPhone');
+      if (cancelPhoneEl) cancelPhoneEl.value = phone;
 
       const loader = document.getElementById('modalLoading');
       const submitBtn = document.getElementById('btnModalSubmit');
 
       loader.style.display = 'block';
       submitBtn.style.display = 'none';
+
+      // Append 'callin' if voice booking requested
+      let finalDetails = details;
+      if (voiceBookingChecked) {
+        finalDetails = details ? `${details} (callin)` : 'callin';
+      }
 
       const payload = {
         action: 'book',
@@ -380,7 +414,7 @@
         name: name,
         phone: phone,
         service: service,
-        details: details
+        details: finalDetails
       };
 
       fetch(SCRIPT_URL, {
@@ -408,7 +442,7 @@
           `*WhatsApp:* ${phone}%0A` +
           `*Date:* ${date}%0A` +
           `*Slot:* ${time}%0A` +
-          `*Details:* ${details}`;
+          `*Details:* ${finalDetails}`;
         window.open(`https://wa.me/919447039929?text=${msg}`, '_blank');
       })
       .catch(err => {
@@ -437,6 +471,9 @@
         alert("Please fill in all details.");
         return;
       }
+
+      // Save phone number automatically
+      localStorage.setItem('patient_phone', phone);
 
       const loader = document.getElementById('cancelLoading');
       const submitBtn = document.getElementById('btnCancelSubmit');
